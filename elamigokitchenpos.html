@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>El Amigo Carniceria Kitchen POS</title>
+    <style>
+        /* --- SCREEN UI STYLING --- */
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 380px; text-align: center; }
+        
+        h2 { color: #2c3e50; margin-bottom: 5px; font-size: 22px; }
+        .date-header { font-size: 13px; font-weight: bold; color: #7f8c8d; margin-bottom: 15px; }
+        
+        /* Combined Counter Bar */
+        .daily-totals { background: #2c3e50; color: #2ecc71; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 18px; font-weight: bold; }
+        .total-label { color: white; font-size: 11px; text-transform: uppercase; margin-right: 5px; }
+
+        .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
+        .btn-qty { width: 55px; height: 55px; font-size: 24px; cursor: pointer; border: none; border-radius: 5px; background: #e0e0e0; font-weight: bold; }
+        .qty-display { font-size: 22px; font-weight: bold; width: 40px; }
+        
+        .btn-print { width: 100%; padding: 18px; background: #27ae60; color: white; border: none; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        
+        /* Scrollable Log */
+        .log-container { background: white; width: 380px; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); max-height: 200px; overflow-y: auto; margin-top: 15px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { border-bottom: 2px solid #eee; padding: 5px; text-align: left; color: #7f8c8d; }
+        td { padding: 8px 5px; border-bottom: 1px solid #f9f9f9; text-align: left; }
+
+        .management-section { margin-top: 20px; display: flex; gap: 10px; width: 380px; }
+        .btn-export { flex: 1; background: #3498db; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-close { flex: 1; background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+
+        /* --- THERMAL RECEIPT STYLING (Optimized) --- */
+        #receipt { 
+            display: none; 
+            width: 58mm; 
+            font-family: 'Courier New', Courier, monospace; 
+            color: black;
+            text-align: center; 
+        }
+        .receipt-time { font-size: 10px; margin-bottom: 5px; border-bottom: 1px dashed black; padding-bottom: 5px; }
+        .receipt-item { font-size: 20px; font-weight: bold; margin: 4px 0; }
+
+        @media print {
+            html, body { height: auto; margin: 0; padding: 0; overflow: hidden; }
+            body * { visibility: hidden; }
+            #receipt, #receipt * { visibility: visible; display: block; }
+            #receipt { position: absolute; left: 0; top: 0; width: 58mm; padding: 0; margin: 0; }
+            @page { size: 58mm auto; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>El Amigo Carniceria</h2>
+    <div id="display-date" class="date-header"></div>
+    
+    <div class="daily-totals">
+        <span class="total-label">Tacos:</span> <span id="total-taco">0</span>
+        <span style="color: #555; margin: 0 10px;">|</span>
+        <span class="total-label">Tostadas:</span> <span id="total-tostada">0</span>
+    </div>
+
+    <div class="item-row">
+        <strong>TACO</strong>
+        <div>
+            <button class="btn-qty" onclick="changeQty('taco', -1)">-</button>
+            <span id="qty-taco" class="qty-display">0</span>
+            <button class="btn-qty" onclick="changeQty('taco', 1)">+</button>
+        </div>
+    </div>
+
+    <div class="item-row">
+        <strong>TOSTADA</strong>
+        <div>
+            <button class="btn-qty" onclick="changeQty('tostada', -1)">-</button>
+            <span id="qty-tostada" class="qty-display">0</span>
+            <button class="btn-qty" onclick="changeQty('tostada', 1)">+</button>
+        </div>
+    </div>
+
+    <button class="btn-print" onclick="doPrint()">PRINT TOKEN</button>
+</div>
+
+<div class="log-container">
+    <table id="log-table">
+        <thead>
+            <tr><th>Time</th><th>Taco</th><th>Tostada</th></tr>
+        </thead>
+        <tbody id="log-body"></tbody>
+    </table>
+</div>
+
+<div class="management-section">
+    <button class="btn-export" onclick="exportLog()">EXPORT LOG (CSV)</button>
+    <button class="btn-close" onclick="doReset()">CLOSE FOR THE DAY</button>
+</div>
+
+<div id="receipt">
+    <div id="receipt-time" class="receipt-time"></div>
+    <div id="receipt-body"></div>
+</div>
+
+<script>
+    // Data stored locally in the browser
+    let totals = JSON.parse(localStorage.getItem('amigoTotals')) || { taco: 0, tostada: 0 };
+    let salesLog = JSON.parse(localStorage.getItem('amigoLog')) || [];
+    let current = { taco: 0, tostada: 0 };
+
+    function refreshUI() {
+        document.getElementById('display-date').innerText = new Date().toDateString().toUpperCase();
+        document.getElementById('total-taco').innerText = totals.taco;
+        document.getElementById('total-tostada').innerText = totals.tostada;
+        document.getElementById('qty-taco').innerText = current.taco;
+        document.getElementById('qty-tostada').innerText = current.tostada;
+
+        const logBody = document.getElementById('log-body');
+        logBody.innerHTML = salesLog.map(entry => `
+            <tr><td>${entry.time}</td><td>${entry.taco}</td><td>${entry.tostada}</td></tr>
+        `).reverse().join('');
+    }
+
+    function changeQty(item, amount) {
+        current[item] = Math.max(0, current[item] + amount);
+        refreshUI();
+    }
+
+    function doPrint() {
+        if (current.taco === 0 && current.tostada === 0) return;
+
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        // Save Data
+        totals.taco += current.taco;
+        totals.tostada += current.tostada;
+        salesLog.push({ time: timeStr, taco: current.taco, tostada: current.tostada });
+        
+        localStorage.setItem('amigoTotals', JSON.stringify(totals));
+        localStorage.setItem('amigoLog', JSON.stringify(salesLog));
+
+        // Format Receipt
+        document.getElementById('receipt-time').innerText = now.toLocaleDateString() + " " + timeStr;
+        let itemsHtml = "";
+        if (current.taco > 0) itemsHtml += `<div class="receipt-item">TACO : ${current.taco}</div>`;
+        if (current.tostada > 0) itemsHtml += `<div class="receipt-item">TOSTADA : ${current.tostada}</div>`;
+        document.getElementById('receipt-body').innerHTML = itemsHtml;
+
+        window.print();
+
+        current = { taco: 0, tostada: 0 };
+        refreshUI();
+    }
+
+    function exportLog() {
+        if (salesLog.length === 0) return alert("No data to export.");
+        let csv = "Time,Taco,Tostada\n" + salesLog.map(e => `${e.time},${e.taco},${e.tostada}`).join("\n");
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Sales_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+    }
+
+    function doReset() {
+        if (confirm("Close store and reset counters? Export your log first!")) {
+            totals = { taco: 0, tostada: 0 };
+            salesLog = [];
+            localStorage.setItem('amigoTotals', JSON.stringify(totals));
+            localStorage.setItem('amigoLog', JSON.stringify(salesLog));
+            refreshUI();
+        }
+    }
+
+    refreshUI();
+</script>
+
+</body>
+</html>
