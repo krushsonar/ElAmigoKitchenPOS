@@ -2,32 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>El Amigo Carniceria Kitchen POS (Cloud)</title>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
+    <title>El Amigo Carniceria Kitchen POS</title>
     <style>
-        /* ... (Keep all your existing CSS styles here) ... */
+        /* SCREEN UI STYLING */
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 380px; text-align: center; }
+        
         h2 { color: #2c3e50; margin-bottom: 5px; font-size: 22px; }
         .date-header { font-size: 13px; font-weight: bold; color: #7f8c8d; margin-bottom: 15px; }
+        
         .daily-totals { background: #2c3e50; color: #2ecc71; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 18px; font-weight: bold; }
         .total-label { color: white; font-size: 11px; text-transform: uppercase; margin-right: 5px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+
+        .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
         .btn-qty { width: 55px; height: 55px; font-size: 24px; cursor: pointer; border: none; border-radius: 5px; background: #e0e0e0; font-weight: bold; }
         .qty-display { font-size: 22px; font-weight: bold; width: 40px; }
+        
         .btn-print { width: 100%; padding: 18px; background: #27ae60; color: white; border: none; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        
         .log-container { background: white; width: 380px; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); max-height: 200px; overflow-y: auto; margin-top: 15px; border: 1px solid #eee; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
         th { border-bottom: 2px solid #eee; padding: 5px; text-align: left; color: #7f8c8d; }
         td { padding: 8px 5px; border-bottom: 1px solid #f9f9f9; text-align: left; }
+
+        /* Management Buttons */
         .management-section { margin-top: 20px; display: flex; gap: 10px; width: 380px; }
         .btn-export { flex: 1; background: #3498db; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .btn-close { flex: 1; background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+
+        /* THERMAL RECEIPT STYLING */
         #receipt { display: none; width: 58mm; font-family: 'Courier New', Courier, monospace; color: black; text-align: center; }
         .receipt-time { font-size: 11px; margin-bottom: 10px; border-bottom: 1px dashed black; padding-bottom: 5px; }
         .receipt-item { font-size: 20px; font-weight: bold; margin: 4px 0; }
+
         @media print {
             body * { visibility: hidden; }
             #receipt, #receipt * { visibility: visible; display: block; }
@@ -71,7 +78,9 @@
 
 <div class="log-container">
     <table id="log-table">
-        <thead><tr><th>Time</th><th>Taco</th><th>Tostada</th></tr></thead>
+        <thead>
+            <tr><th>Time</th><th>Taco</th><th>Tostada</th></tr>
+        </thead>
         <tbody id="log-body"></tbody>
     </table>
 </div>
@@ -87,116 +96,88 @@
 </div>
 
 <script>
-    // --- STEP 3: PASTE YOUR CONFIG HERE ---
-    const firebaseConfig = {
-  	apiKey: "AIzaSyBgZSNgxjwKNSMtIHoNfnSyjaAJi_DSjOU",
-  	authDomain: "el-amigo-carniceria.firebaseapp.com",
-  	projectId: "el-amigo-carniceria",
-  	storageBucket: "el-amigo-carniceria.firebasestorage.app",
-  	messagingSenderId: "574701073490",
-  	appId: "1:574701073490:web:aba3926ef8a30a9b871b8b"
-	};
-    // ---------------------------------------
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const statsRef = db.collection("dailySales").doc("currentTotals");
-    const logRef = db.collection("transactions");
-
-    let totals = { taco: 0, tostada: 0 };
-    let salesLog = [];
-    let currentOrder = { taco: 0, tostada: 0 };
-
-    // Real-time listener: Syncs counters across all devices automatically
-    statsRef.onSnapshot((doc) => {
-        if (doc.exists) {
-            totals = doc.data();
-            refreshUI();
-        } else {
-            statsRef.set({ taco: 0, tostada: 0 });
-        }
-    });
-
-    // Real-time listener: Syncs logs
-    logRef.orderBy("timestamp", "desc").limit(50).onSnapshot((querySnapshot) => {
-        salesLog = [];
-        querySnapshot.forEach((doc) => {
-            salesLog.push(doc.data());
-        });
-        refreshUI();
-    });
+    let totals = JSON.parse(localStorage.getItem('amigoTotals')) || { taco: 0, tostada: 0 };
+    let salesLog = JSON.parse(localStorage.getItem('amigoLog')) || [];
+    let current = { taco: 0, tostada: 0 };
 
     function refreshUI() {
-        document.getElementById('display-date').innerText = new Date().toDateString().toUpperCase();
-        document.getElementById('total-taco').innerText = totals.taco || 0;
-        document.getElementById('total-tostada').innerText = totals.tostada || 0;
-        document.getElementById('qty-taco').innerText = currentOrder.taco;
-        document.getElementById('qty-tostada').innerText = currentOrder.tostada;
+        const now = new Date();
+        document.getElementById('display-date').innerText = now.toDateString().toUpperCase();
+        document.getElementById('total-taco').innerText = totals.taco;
+        document.getElementById('total-tostada').innerText = totals.tostada;
+        document.getElementById('qty-taco').innerText = current.taco;
+        document.getElementById('qty-tostada').innerText = current.tostada;
 
         const logBody = document.getElementById('log-body');
         logBody.innerHTML = salesLog.map(entry => `
             <tr><td>${entry.time}</td><td>${entry.taco}</td><td>${entry.tostada}</td></tr>
-        `).join('');
+        `).reverse().join('');
     }
 
     function changeQty(item, amount) {
-        currentOrder[item] = Math.max(0, currentOrder[item] + amount);
+        current[item] = Math.max(0, current[item] + amount);
         refreshUI();
     }
 
-    async function doPrint() {
-        if (currentOrder.taco === 0 && currentOrder.tostada === 0) return;
+    function doPrint() {
+        if (current.taco === 0 && current.tostada === 0) return;
         const now = new Date();
         const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-        // Update Cloud Database
-        await statsRef.update({
-            taco: firebase.firestore.FieldValue.increment(currentOrder.taco),
-            tostada: firebase.firestore.FieldValue.increment(currentOrder.tostada)
-        });
+        totals.taco += current.taco;
+        totals.tostada += current.tostada;
+        salesLog.push({ time: timeStr, taco: current.taco, tostada: current.tostada });
+        
+        localStorage.setItem('amigoTotals', JSON.stringify(totals));
+        localStorage.setItem('amigoLog', JSON.stringify(salesLog));
 
-        await logRef.add({
-            time: timeStr,
-            taco: currentOrder.taco,
-            tostada: currentOrder.tostada,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Format and Print Receipt
         document.getElementById('receipt-time').innerText = now.toLocaleDateString() + " " + timeStr;
         let itemsHtml = "";
-        if (currentOrder.taco > 0) itemsHtml += `<div class="receipt-item">TACO : ${currentOrder.taco}</div>`;
-        if (currentOrder.tostada > 0) itemsHtml += `<div class="receipt-item">TOSTADA : ${currentOrder.tostada}</div>`;
+        if (current.taco > 0) itemsHtml += `<div class="receipt-item">TACO : ${current.taco}</div>`;
+        if (current.tostada > 0) itemsHtml += `<div class="receipt-item">TOSTADA : ${current.tostada}</div>`;
         document.getElementById('receipt-body').innerHTML = itemsHtml;
 
         window.print();
-        currentOrder = { taco: 0, tostada: 0 };
+        current = { taco: 0, tostada: 0 };
         refreshUI();
     }
 
     function exportLog() {
+        if (salesLog.length === 0) {
+            alert("No entries to export today.");
+            return;
+        }
+        
+        const dateStr = new Date().toISOString().split('T')[0];
         let csvContent = "Time,Tacos,Tostadas\n";
-        salesLog.forEach(entry => { csvContent += `${entry.time},${entry.taco},${entry.tostada}\n`; });
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Sales_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
+        
+        salesLog.forEach(entry => {
+            csvContent += `${entry.time},${entry.taco},${entry.tostada}\n`;
+        });
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Sales_${dateStr}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
-    async function doReset() {
-        if (confirm("Close store? This clears the CLOUD totals and log for everyone!")) {
-            await statsRef.set({ taco: 0, tostada: 0 });
-            const snapshot = await logRef.get();
-            const batch = db.batch();
-            snapshot.docs.forEach((doc) => batch.delete(doc.ref));
-            await batch.commit();
-            alert("Counters reset on all devices.");
+    function doReset() {
+        if (confirm("Are you sure you want to close for the day? This will clear the counters and log. Make sure you have exported your log first!")) {
+            totals = { taco: 0, tostada: 0 };
+            salesLog = [];
+            localStorage.setItem('amigoTotals', JSON.stringify(totals));
+            localStorage.setItem('amigoLog', JSON.stringify(salesLog));
+            refreshUI();
         }
     }
 
     refreshUI();
 </script>
+
 </body>
 </html>
