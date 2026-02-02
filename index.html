@@ -2,112 +2,199 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>El Amigo Carniceria Kitchen POS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>El Amigo Carniceria Kitchen POS v1.8</title>
     <style>
-        /* --- SCREEN UI STYLING --- */
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 380px; text-align: center; }
+        /* --- SECURE GATE STYLING --- */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #2c3e50; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 9999; color: white;
+        }
+        .login-box { background: white; padding: 30px; border-radius: 12px; text-align: center; width: 300px; color: #333; }
+        .login-input { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 20px; text-align: center; box-sizing: border-box; }
+        .btn-login { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         
-        h2 { color: #2c3e50; margin-bottom: 5px; font-size: 22px; }
+        #main-app { display: none; flex-direction: column; align-items: center; width: 100%; }
+        
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; min-height: 100vh; }
+        .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; box-sizing: border-box; }
+        h2 { color: #2c3e50; margin-bottom: 5px; font-size: clamp(1.2rem, 5vw, 1.5rem); display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .lock-icon { cursor: pointer; font-size: 16px; color: #bdc3c7; }
         .date-header { font-size: 13px; font-weight: bold; color: #7f8c8d; margin-bottom: 15px; }
         
-        /* Combined Counter Bar */
-        .daily-totals { background: #2c3e50; color: #2ecc71; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 18px; font-weight: bold; }
-        .total-label { color: white; font-size: 11px; text-transform: uppercase; margin-right: 5px; }
-
-        .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
-        .btn-qty { width: 55px; height: 55px; font-size: 24px; cursor: pointer; border: none; border-radius: 5px; background: #e0e0e0; font-weight: bold; }
-        .qty-display { font-size: 22px; font-weight: bold; width: 40px; }
+        .daily-totals { background: #2c3e50; color: #2ecc71; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: clamp(1rem, 4vw, 1.2rem); font-weight: bold; display: flex; justify-content: center; gap: 10px; }
+        .total-label { color: white; font-size: 11px; text-transform: uppercase; align-self: center; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
+        .controls { display: flex; align-items: center; gap: 15px; }
+        .btn-qty { width: 60px; height: 60px; font-size: 28px; cursor: pointer; border: none; border-radius: 8px; background: #e0e0e0; font-weight: bold; touch-action: manipulation; }
+        .qty-display { font-size: 24px; font-weight: bold; width: 40px; }
+        .note-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .btn-print { width: 100%; padding: 20px; background: #27ae60; color: white; border: none; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-bottom: 10px; }
+        .btn-void { width: 100%; padding: 12px; background: #f39c12; color: white; border: none; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; }
         
-        .btn-print { width: 100%; padding: 18px; background: #27ae60; color: white; border: none; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .history-container, .log-container { background: white; width: 100%; max-width: 450px; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-top: 15px; border: 1px solid #eee; box-sizing: border-box; }
+        .log-container { max-height: 150px; overflow-y: auto; }
+        .history-container { max-height: 200px; overflow-y: auto; }
         
-        /* Scrollable Log */
-        .log-container { background: white; width: 380px; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); max-height: 200px; overflow-y: auto; margin-top: 15px; border: 1px solid #eee; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { border-bottom: 2px solid #eee; padding: 5px; text-align: left; color: #7f8c8d; }
-        td { padding: 8px 5px; border-bottom: 1px solid #f9f9f9; text-align: left; }
+        h4 { margin: 10px 0; color: #7f8c8d; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { border-bottom: 2px solid #eee; padding: 8px; text-align: left; color: #7f8c8d; }
+        td { padding: 10px 8px; border-bottom: 1px solid #f9f9f9; text-align: left; }
+        
+        .management-section { margin-top: 20px; display: flex; gap: 10px; width: 100%; max-width: 450px; box-sizing: border-box; margin-bottom: 20px; }
+        .btn-export { flex: 1; background: #3498db; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .btn-close { flex: 1; background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; }
 
-        .management-section { margin-top: 20px; display: flex; gap: 10px; width: 380px; }
-        .btn-export { flex: 1; background: #3498db; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        .btn-close { flex: 1; background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
-
-        /* --- THERMAL RECEIPT STYLING (Optimized) --- */
-        #receipt { 
-            display: none; 
-            width: 58mm; 
-            font-family: 'Courier New', Courier, monospace; 
-            color: black;
-            text-align: center; 
-        }
+        /* --- THERMAL RECEIPT --- */
+        #receipt { display: none; width: 58mm; font-family: 'Courier New', Courier, monospace; color: black; text-align: center; box-sizing: border-box; padding-top: 10px; padding-bottom: 15px; }
         .receipt-time { font-size: 10px; margin-bottom: 5px; border-bottom: 1px dashed black; padding-bottom: 5px; }
-        .receipt-item { font-size: 20px; font-weight: bold; margin: 4px 0; }
+        .receipt-item { font-size: 20px; font-weight: bold; margin: 4px 0; text-transform: uppercase; }
+        .receipt-note { font-size: 14px; font-style: italic; margin-top: 10px; border-top: 1px solid #000; padding-top: 5px; }
 
         @media print {
             html, body { height: auto; margin: 0; padding: 0; overflow: hidden; }
             body * { visibility: hidden; }
             #receipt, #receipt * { visibility: visible; display: block; }
-            #receipt { position: absolute; left: 0; top: 0; width: 58mm; padding: 0; margin: 0; }
+            #receipt { position: absolute; left: 0; top: 0; width: 58mm; margin: 0; }
             @page { size: 58mm auto; margin: 0; }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>El Amigo Carniceria</h2>
-    <div id="display-date" class="date-header"></div>
-    
-    <div class="daily-totals">
-        <span class="total-label">Tacos:</span> <span id="total-taco">0</span>
-        <span style="color: #555; margin: 0 10px;">|</span>
-        <span class="total-label">Tostadas:</span> <span id="total-tostada">0</span>
+<div id="login-overlay">
+    <div class="login-box">
+        <h3>Employee Login</h3>
+        <p style="font-size: 12px;">El Amigo Carniceria POS</p>
+        <form onsubmit="event.preventDefault(); checkPass();">
+            <input type="password" id="pass-field" class="login-input" placeholder="Enter PIN" inputmode="numeric">
+            <button type="button" class="btn-login" onclick="checkPass()">ENTER</button>
+        </form>
+        <p id="login-error" style="color: red; font-size: 12px; margin-top: 10px; display: none;">Incorrect PIN</p>
     </div>
-
-    <div class="item-row">
-        <strong>TACO</strong>
-        <div>
-            <button class="btn-qty" onclick="changeQty('taco', -1)">-</button>
-            <span id="qty-taco" class="qty-display">0</span>
-            <button class="btn-qty" onclick="changeQty('taco', 1)">+</button>
-        </div>
-    </div>
-
-    <div class="item-row">
-        <strong>TOSTADA</strong>
-        <div>
-            <button class="btn-qty" onclick="changeQty('tostada', -1)">-</button>
-            <span id="qty-tostada" class="qty-display">0</span>
-            <button class="btn-qty" onclick="changeQty('tostada', 1)">+</button>
-        </div>
-    </div>
-
-    <button class="btn-print" onclick="doPrint()">PRINT TOKEN</button>
 </div>
 
-<div class="log-container">
-    <table id="log-table">
-        <thead>
-            <tr><th>Time</th><th>Taco</th><th>Tostada</th></tr>
-        </thead>
-        <tbody id="log-body"></tbody>
-    </table>
-</div>
+<div id="main-app">
+    <div class="container">
+        <h2>El Amigo Carniceria <span class="lock-icon" onclick="manualLock()">🔒</span></h2>
+        <div id="display-date" class="date-header"></div>
+        <div class="daily-totals">
+            <span class="total-label">Tacos:</span> <span id="total-taco">0</span>
+            <span style="color: #555; margin: 0 5px;">|</span>
+            <span class="total-label">Tostadas:</span> <span id="total-tostada">0</span>
+        </div>
+        <div class="item-row">
+            <strong>TACO</strong>
+            <div class="controls">
+                <button class="btn-qty" onclick="changeQty('taco', -1)">-</button>
+                <span id="qty-taco" class="qty-display">0</span>
+                <button class="btn-qty" onclick="changeQty('taco', 1)">+</button>
+            </div>
+        </div>
+        <div class="item-row">
+            <strong>TOSTADA</strong>
+            <div class="controls">
+                <button class="btn-qty" onclick="changeQty('tostada', -1)">-</button>
+                <span id="qty-tostada" class="qty-display">0</span>
+                <button class="btn-qty" onclick="changeQty('tostada', 1)">+</button>
+            </div>
+        </div>
+        <input type="text" id="kitchen-note" class="note-input" placeholder="Optional Note">
+        <button class="btn-print" onclick="doPrint()">PRINT TOKEN</button>
+        <button class="btn-void" onclick="voidLast()">VOID LAST ORDER</button>
+    </div>
 
-<div class="management-section">
-    <button class="btn-export" onclick="exportLog()">EXPORT LOG (CSV)</button>
-    <button class="btn-close" onclick="doReset()">CLOSE FOR THE DAY</button>
+    <div class="log-container">
+        <h4>Recent Orders</h4>
+        <table id="log-table">
+            <thead><tr><th>Time</th><th>Taco</th><th>Tostada</th></tr></thead>
+            <tbody id="log-body"></tbody>
+        </table>
+    </div>
+
+    <div class="history-container">
+        <h4>Sales History (Last 30 Days)</h4>
+        <table id="history-table">
+            <thead><tr><th>Date</th><th>Taco</th><th>Tostada</th></tr></thead>
+            <tbody id="history-body"></tbody>
+        </table>
+    </div>
+
+    <div class="management-section">
+        <button class="btn-export" onclick="exportLog()">EXPORT LOG</button>
+        <button class="btn-close" onclick="doReset()">CLOSE DAY</button>
+    </div>
 </div>
 
 <div id="receipt">
     <div id="receipt-time" class="receipt-time"></div>
     <div id="receipt-body"></div>
+    <div id="receipt-note-container"></div>
 </div>
 
 <script>
-    // Data stored locally in the browser
+    // --- SETTINGS ---
+    const SHOP_PIN = "1234"; 
+    const MANAGER_PIN = "9999"; // Updated Manager PIN
+    const SESSION_EXPIRY = 12 * 60 * 60 * 1000; 
+
+    // Improved PIN check logic
+    function checkPass() {
+        const input = document.getElementById('pass-field').value.trim(); // Added .trim() for reliability
+        if (input === SHOP_PIN) {
+            localStorage.setItem('pos_auth_time', Date.now());
+            showApp();
+        } else {
+            document.getElementById('login-error').style.display = 'block';
+            document.getElementById('pass-field').value = "";
+        }
+    }
+
+    function showApp() {
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('main-app').style.display = 'flex';
+        checkAutoArchive();
+        refreshUI();
+    }
+
+    function manualLock() { localStorage.removeItem('pos_auth_time'); location.reload(); }
+
+    window.onload = function() {
+        const lastAuth = localStorage.getItem('pos_auth_time');
+        if (lastAuth && (Date.now() - lastAuth < SESSION_EXPIRY)) showApp();
+    }
+
+    // --- POS ENGINE (v1.7 Logic) ---
     let totals = JSON.parse(localStorage.getItem('amigoTotals')) || { taco: 0, tostada: 0 };
     let salesLog = JSON.parse(localStorage.getItem('amigoLog')) || [];
+    let history = JSON.parse(localStorage.getItem('amigoHistory')) || [];
     let current = { taco: 0, tostada: 0 };
+    let lastActiveDate = localStorage.getItem('amigoLastActiveDate') || new Date().toDateString();
+
+    function checkAutoArchive() {
+        const todayStr = new Date().toDateString();
+        if (lastActiveDate !== todayStr) {
+            if (totals.taco > 0 || totals.tostada > 0) {
+                archiveToHistory(lastActiveDate, totals.taco, totals.tostada);
+                totals = { taco: 0, tostada: 0 };
+                salesLog = [];
+            }
+            lastActiveDate = todayStr;
+            saveData();
+        }
+    }
+
+    function archiveToHistory(dateStr, tCount, tostCount) {
+        const existingIdx = history.findIndex(day => day.date === dateStr);
+        if (existingIdx > -1) {
+            history[existingIdx].taco += tCount;
+            history[existingIdx].tostada += tostCount;
+        } else {
+            history.push({ date: dateStr, taco: tCount, tostada: tostCount });
+        }
+        if (history.length > 30) history.shift();
+    }
 
     function refreshUI() {
         document.getElementById('display-date').innerText = new Date().toDateString().toUpperCase();
@@ -115,68 +202,74 @@
         document.getElementById('total-tostada').innerText = totals.tostada;
         document.getElementById('qty-taco').innerText = current.taco;
         document.getElementById('qty-tostada').innerText = current.tostada;
-
         const logBody = document.getElementById('log-body');
-        logBody.innerHTML = salesLog.map(entry => `
-            <tr><td>${entry.time}</td><td>${entry.taco}</td><td>${entry.tostada}</td></tr>
-        `).reverse().join('');
+        logBody.innerHTML = salesLog.map(entry => `<tr><td>${entry.time}</td><td>${entry.taco}</td><td>${entry.tostada}</td></tr>`).reverse().join('');
+        const histBody = document.getElementById('history-body');
+        histBody.innerHTML = history.map(day => `<tr><td class="hist-date">${day.date}</td><td>${day.taco}</td><td>${day.tostada}</td></tr>`).reverse().join('');
     }
 
-    function changeQty(item, amount) {
-        current[item] = Math.max(0, current[item] + amount);
-        refreshUI();
-    }
+    function changeQty(item, amount) { current[item] = Math.max(0, current[item] + amount); refreshUI(); }
+    function getDisplayName(count, baseName) { return count === 1 ? baseName : baseName + "S"; }
 
     function doPrint() {
         if (current.taco === 0 && current.tostada === 0) return;
-
         const now = new Date();
         const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-        // Save Data
-        totals.taco += current.taco;
-        totals.tostada += current.tostada;
+        const noteText = document.getElementById('kitchen-note').value;
+        totals.taco += current.taco; totals.tostada += current.tostada;
         salesLog.push({ time: timeStr, taco: current.taco, tostada: current.tostada });
-        
-        localStorage.setItem('amigoTotals', JSON.stringify(totals));
-        localStorage.setItem('amigoLog', JSON.stringify(salesLog));
-
-        // Format Receipt
+        lastActiveDate = new Date().toDateString();
+        saveData();
         document.getElementById('receipt-time').innerText = now.toLocaleDateString() + " " + timeStr;
         let itemsHtml = "";
-        if (current.taco > 0) itemsHtml += `<div class="receipt-item">TACO : ${current.taco}</div>`;
-        if (current.tostada > 0) itemsHtml += `<div class="receipt-item">TOSTADA : ${current.tostada}</div>`;
+        if (current.taco > 0) itemsHtml += `<div class="receipt-item">${current.taco} ${getDisplayName(current.taco, "TACO")}</div>`;
+        if (current.tostada > 0) itemsHtml += `<div class="receipt-item">${current.tostada} ${getDisplayName(current.tostada, "TOSTADA")}</div>`;
         document.getElementById('receipt-body').innerHTML = itemsHtml;
-
+        const noteContainer = document.getElementById('receipt-note-container');
+        noteContainer.innerHTML = noteText.trim() !== "" ? `<div class="receipt-note">NOTE: ${noteText.toUpperCase()}</div>` : "";
         window.print();
-
-        current = { taco: 0, tostada: 0 };
-        refreshUI();
+        current = { taco: 0, tostada: 0 }; document.getElementById('kitchen-note').value = ""; refreshUI();
     }
 
-    function exportLog() {
-        if (salesLog.length === 0) return alert("No data to export.");
-        let csv = "Time,Taco,Tostada\n" + salesLog.map(e => `${e.time},${e.taco},${e.tostada}`).join("\n");
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Sales_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-    }
-
-    function doReset() {
-        if (confirm("Close store and reset counters? Export your log first!")) {
-            totals = { taco: 0, tostada: 0 };
-            salesLog = [];
-            localStorage.setItem('amigoTotals', JSON.stringify(totals));
-            localStorage.setItem('amigoLog', JSON.stringify(salesLog));
-            refreshUI();
+    function voidLast() {
+        if (salesLog.length === 0) return alert("No orders to void.");
+        const lastOrder = salesLog[salesLog.length - 1];
+        if (confirm(`Void last order from ${lastOrder.time}?`)) {
+            totals.taco = Math.max(0, totals.taco - lastOrder.taco); totals.tostada = Math.max(0, totals.tostada - lastOrder.tostada);
+            salesLog.pop(); saveData(); refreshUI();
         }
     }
 
-    refreshUI();
-</script>
+    function saveData() { 
+        localStorage.setItem('amigoTotals', JSON.stringify(totals)); 
+        localStorage.setItem('amigoLog', JSON.stringify(salesLog)); 
+        localStorage.setItem('amigoHistory', JSON.stringify(history)); 
+        localStorage.setItem('amigoLastActiveDate', lastActiveDate); 
+    }
 
+    function exportLog() { 
+        if (salesLog.length === 0) return alert("No data"); 
+        let csv = "Time,Taco,Tostada\n" + salesLog.map(e => `${e.time},${e.taco},${e.tostada}`).join("\n"); 
+        const blob = new Blob([csv], { type: 'text/csv' }); 
+        const url = URL.createObjectURL(blob); 
+        const a = document.createElement("a"); 
+        a.href = url; a.download = `Sales_${new Date().toISOString().split('T')[0]}.csv`; a.click(); 
+    }
+
+    function doReset() {
+        const pin = prompt("Enter Manager PIN to close the day:").trim();
+        if (pin === MANAGER_PIN) {
+            if (confirm("Close day? Sales will be added to History.")) {
+                archiveToHistory(lastActiveDate, totals.taco, totals.tostada);
+                totals = { taco: 0, tostada: 0 };
+                salesLog = [];
+                saveData();
+                refreshUI();
+            }
+        } else if (pin !== null) {
+            alert("Incorrect PIN.");
+        }
+    }
+</script>
 </body>
 </html>
