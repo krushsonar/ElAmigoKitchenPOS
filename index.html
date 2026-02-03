@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>El Amigo Carniceria Kitchen POS v1.9.1</title>
+    <title>El Amigo Carniceria Kitchen POS v1.9.2</title>
     <style>
         /* --- SECURE GATE STYLING --- */
         #login-overlay {
@@ -136,22 +136,20 @@
 </div>
 
 <script>
-    // --- SETTINGS ---
-    const SHOP_PIN = "1234"; 
+    // --- CONSOLIDATED SETTINGS ---
+    const SHOP_PIN = "1234";
     const MANAGER_PIN = "9999";
-    const SESSION_EXPIRY = 12 * 60 * 60 * 1000; 
+    const SESSION_EXPIRY = 12 * 60 * 60 * 1000;
 
-    // Improved Login for Hosted Environments
+    // --- LOGIN LOGIC ---
     function checkPass() {
         const inputField = document.getElementById('pass-field');
         const inputVal = inputField.value.trim();
         
         if (inputVal === SHOP_PIN) {
-            console.log("Login successful");
             localStorage.setItem('pos_auth_time', Date.now());
             showApp();
         } else {
-            console.log("Login failed");
             document.getElementById('login-error').style.display = 'block';
             inputField.value = "";
         }
