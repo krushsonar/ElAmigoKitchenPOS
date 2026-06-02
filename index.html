@@ -61,10 +61,12 @@
     <div class="container">
         <h2>El Amigo Carniceria <span class="lock-icon" onclick="manualLock()">🔒</span></h2>
         <div id="display-date" class="date-header"></div>
-        <div class="daily-totals">
-            <span class="total-label">Tacos:</span> <span id="total-taco">0</span>
-            <span style="color: #555; margin: 0 5px;">|</span>
-            <span class="total-label">Tortas:</span> <span id="total-torta">0</span>
+        <div id="totals-container" class="manager-only">
+            <div class="daily-totals">
+                <span class="total-label">Tacos:</span> <span id="total-taco">0</span>
+                <span style="color: #555; margin: 0 5px;">|</span>
+                <span class="total-label">Tortas:</span> <span id="total-torta">0</span>
+            </div>
         </div>
         <div class="item-row">
             <strong>TACO</strong>
@@ -126,6 +128,7 @@
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('main-app').style.display = 'flex';
         document.getElementById('manager-tools').style.display = isManager ? 'flex' : 'none';
+        document.getElementById('totals-container').style.display = isManager ? 'block' : 'none';
         checkAutoArchive();
         refreshUI();
     }
