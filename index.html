@@ -130,7 +130,11 @@
         refreshUI();
     }
 
-    function manualLock() { localStorage.clear(); location.reload(); }
+    function manualLock() { 
+        localStorage.removeItem('pos_auth_time'); 
+        localStorage.removeItem('pos_is_manager'); 
+        location.reload(); 
+    }
 
     window.onload = function() {
         const lastAuth = localStorage.getItem('pos_auth_time');
