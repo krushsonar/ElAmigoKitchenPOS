@@ -6,24 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>El Amigo Carniceria Kitchen POS v1.9.2</title>
     <style>
-        /* --- SECURE GATE STYLING --- */
-        #login-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #2c3e50; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 9999; color: white;
-        }
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; color: white; }
         .login-box { background: white; padding: 30px; border-radius: 12px; text-align: center; width: 300px; color: #333; }
         .login-input { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 20px; text-align: center; box-sizing: border-box; }
         .btn-login { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        
         #main-app { display: none; flex-direction: column; align-items: center; width: 100%; }
-        
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; min-height: 100vh; }
         .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; box-sizing: border-box; }
         h2 { color: #2c3e50; margin-bottom: 5px; font-size: clamp(1.2rem, 5vw, 1.5rem); display: flex; justify-content: center; align-items: center; gap: 10px; }
         .lock-icon { cursor: pointer; font-size: 16px; color: #bdc3c7; }
         .date-header { font-size: 13px; font-weight: bold; color: #7f8c8d; margin-bottom: 15px; }
-        
         .daily-totals { background: #2c3e50; color: #2ecc71; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: clamp(1rem, 4vw, 1.2rem); font-weight: bold; display: flex; justify-content: center; gap: 10px; }
         .total-label { color: white; font-size: 11px; text-transform: uppercase; align-self: center; }
         .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
@@ -33,35 +25,23 @@
         .note-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         .btn-print { width: 100%; padding: 20px; background: #27ae60; color: white; border: none; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-bottom: 10px; }
         .btn-void { width: 100%; padding: 12px; background: #f39c12; color: white; border: none; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; }
-        
         .history-container, .log-container { background: white; width: 100%; max-width: 450px; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-top: 15px; border: 1px solid #eee; box-sizing: border-box; }
         .log-container { max-height: 150px; overflow-y: auto; }
         .history-container { max-height: 200px; overflow-y: auto; }
-        
         h4 { margin: 10px 0; color: #7f8c8d; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th { border-bottom: 2px solid #eee; padding: 8px; text-align: left; color: #7f8c8d; }
         td { padding: 10px 8px; border-bottom: 1px solid #f9f9f9; text-align: left; }
-        
         .management-section { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; width: 100%; max-width: 450px; box-sizing: border-box; margin-bottom: 20px; }
         .btn-export { flex: 1 1 100%; background: #3498db; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; }
         .btn-summary { flex: 1; background: #2c3e50; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; }
         .btn-close { flex: 1; background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; }
-
-        /* --- THERMAL RECEIPT --- */
         #receipt { display: none; width: 58mm; font-family: 'Courier New', Courier, monospace; color: black; text-align: center; box-sizing: border-box; padding-top: 10px; padding-bottom: 15px; }
         .receipt-time { font-size: 10px; margin-bottom: 5px; border-bottom: 1px dashed black; padding-bottom: 5px; }
         .receipt-item { font-size: 20px; font-weight: bold; margin: 4px 0; text-transform: uppercase; }
         .receipt-note { font-size: 14px; font-style: italic; margin-top: 10px; border-top: 1px solid #000; padding-top: 5px; }
         .summary-title { font-size: 18px; text-decoration: underline; margin-bottom: 10px; }
-
-        @media print {
-            html, body { height: auto; margin: 0; padding: 0; overflow: hidden; }
-            body * { visibility: hidden; }
-            #receipt, #receipt * { visibility: visible; display: block; }
-            #receipt { position: absolute; left: 0; top: 0; width: 58mm; margin: 0; }
-            @page { size: 58mm auto; margin: 0; }
-        }
+        @media print { html, body { height: auto; margin: 0; padding: 0; overflow: hidden; } body * { visibility: hidden; } #receipt, #receipt * { visibility: visible; display: block; } #receipt { position: absolute; left: 0; top: 0; width: 58mm; margin: 0; } @page { size: 58mm auto; margin: 0; } }
     </style>
 </head>
 <body>
@@ -83,7 +63,7 @@
         <div class="daily-totals">
             <span class="total-label">Tacos:</span> <span id="total-taco">0</span>
             <span style="color: #555; margin: 0 5px;">|</span>
-            <span class="total-label">Tostadas:</span> <span id="total-tostada">0</span>
+            <span class="total-label">Tortas:</span> <span id="total-torta">0</span>
         </div>
         <div class="item-row">
             <strong>TACO</strong>
@@ -94,11 +74,11 @@
             </div>
         </div>
         <div class="item-row">
-            <strong>TOSTADA</strong>
+            <strong>TORTA</strong>
             <div class="controls">
-                <button class="btn-qty" onclick="changeQty('tostada', -1)">-</button>
-                <span id="qty-tostada" class="qty-display">0</span>
-                <button class="btn-qty" onclick="changeQty('tostada', 1)">+</button>
+                <button class="btn-qty" onclick="changeQty('torta', -1)">-</button>
+                <span id="qty-torta" class="qty-display">0</span>
+                <button class="btn-qty" onclick="changeQty('torta', 1)">+</button>
             </div>
         </div>
         <input type="text" id="kitchen-note" class="note-input" placeholder="Optional Note">
@@ -109,7 +89,7 @@
     <div class="log-container">
         <h4>Recent Orders</h4>
         <table id="log-table">
-            <thead><tr><th>Time</th><th>Taco</th><th>Tostada</th></tr></thead>
+            <thead><tr><th>Time</th><th>Taco</th><th>Torta</th></tr></thead>
             <tbody id="log-body"></tbody>
         </table>
     </div>
@@ -117,7 +97,7 @@
     <div class="history-container">
         <h4>Sales History (Last 30 Days)</h4>
         <table id="history-table">
-            <thead><tr><th>Date</th><th>Taco</th><th>Tostada</th></tr></thead>
+            <thead><tr><th>Date</th><th>Taco</th><th>Torta</th></tr></thead>
             <tbody id="history-body"></tbody>
         </table>
     </div>
@@ -136,16 +116,13 @@
 </div>
 
 <script>
-    // --- CONSOLIDATED SETTINGS ---
     const SHOP_PIN = "1234";
     const MANAGER_PIN = "9999";
     const SESSION_EXPIRY = 12 * 60 * 60 * 1000;
 
-    // --- LOGIN LOGIC ---
     function checkPass() {
         const inputField = document.getElementById('pass-field');
         const inputVal = inputField.value.trim();
-        
         if (inputVal === SHOP_PIN) {
             localStorage.setItem('pos_auth_time', Date.now());
             showApp();
@@ -166,24 +143,21 @@
 
     window.onload = function() {
         const lastAuth = localStorage.getItem('pos_auth_time');
-        if (lastAuth && (Date.now() - lastAuth < SESSION_EXPIRY)) {
-            showApp();
-        }
+        if (lastAuth && (Date.now() - lastAuth < SESSION_EXPIRY)) { showApp(); }
     }
 
-    // --- POS ENGINE ---
-    let totals = JSON.parse(localStorage.getItem('amigoTotals')) || { taco: 0, tostada: 0 };
+    let totals = JSON.parse(localStorage.getItem('amigoTotals')) || { taco: 0, torta: 0 };
     let salesLog = JSON.parse(localStorage.getItem('amigoLog')) || [];
     let history = JSON.parse(localStorage.getItem('amigoHistory')) || [];
-    let current = { taco: 0, tostada: 0 };
+    let current = { taco: 0, torta: 0 };
     let lastActiveDate = localStorage.getItem('amigoLastActiveDate') || new Date().toDateString();
 
     function checkAutoArchive() {
         const todayStr = new Date().toDateString();
         if (lastActiveDate !== todayStr) {
-            if (totals.taco > 0 || totals.tostada > 0) {
-                archiveToHistory(lastActiveDate, totals.taco, totals.tostada);
-                totals = { taco: 0, tostada: 0 };
+            if (totals.taco > 0 || totals.torta > 0) {
+                archiveToHistory(lastActiveDate, totals.taco, totals.torta);
+                totals = { taco: 0, torta: 0 };
                 salesLog = [];
             }
             lastActiveDate = todayStr;
@@ -191,13 +165,13 @@
         }
     }
 
-    function archiveToHistory(dateStr, tCount, tostCount) {
+    function archiveToHistory(dateStr, tCount, tortCount) {
         const existingIdx = history.findIndex(day => day.date === dateStr);
         if (existingIdx > -1) {
             history[existingIdx].taco += tCount;
-            history[existingIdx].tostada += tostCount;
+            history[existingIdx].torta += tortCount;
         } else {
-            history.push({ date: dateStr, taco: tCount, tostada: tostCount });
+            history.push({ date: dateStr, taco: tCount, torta: tortCount });
         }
         if (history.length > 30) history.shift();
     }
@@ -205,38 +179,36 @@
     function refreshUI() {
         document.getElementById('display-date').innerText = new Date().toDateString().toUpperCase();
         document.getElementById('total-taco').innerText = totals.taco;
-        document.getElementById('total-tostada').innerText = totals.tostada;
+        document.getElementById('total-torta').innerText = totals.torta;
         document.getElementById('qty-taco').innerText = current.taco;
-        document.getElementById('qty-tostada').innerText = current.tostada;
+        document.getElementById('qty-torta').innerText = current.torta;
         const logBody = document.getElementById('log-body');
-        logBody.innerHTML = salesLog.map(entry => `<tr><td>${entry.time}</td><td>${entry.taco}</td><td>${entry.tostada}</td></tr>`).reverse().join('');
+        logBody.innerHTML = salesLog.map(entry => `<tr><td>${entry.time}</td><td>${entry.taco}</td><td>${entry.torta}</td></tr>`).reverse().join('');
         const histBody = document.getElementById('history-body');
-        histBody.innerHTML = history.map(day => `<tr><td class="hist-date">${day.date}</td><td>${day.taco}</td><td>${day.tostada}</td></tr>`).reverse().join('');
+        histBody.innerHTML = history.map(day => `<tr><td class="hist-date">${day.date}</td><td>${day.taco}</td><td>${day.torta}</td></tr>`).reverse().join('');
     }
 
     function changeQty(item, amount) { current[item] = Math.max(0, current[item] + amount); refreshUI(); }
     function getDisplayName(count, baseName) { return count === 1 ? baseName : baseName + "S"; }
 
     function doPrint() {
-        if (current.taco === 0 && current.tostada === 0) return;
+        if (current.taco === 0 && current.torta === 0) return;
         const now = new Date();
         const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const noteText = document.getElementById('kitchen-note').value;
-        totals.taco += current.taco; totals.tostada += current.tostada;
-        salesLog.push({ time: timeStr, taco: current.taco, tostada: current.tostada });
+        totals.taco += current.taco; totals.torta += current.torta;
+        salesLog.push({ time: timeStr, taco: current.taco, torta: current.torta });
         lastActiveDate = new Date().toDateString();
         saveData();
-        
         document.getElementById('receipt-time').innerText = now.toLocaleDateString() + " " + timeStr;
         let itemsHtml = "";
         if (current.taco > 0) itemsHtml += `<div class="receipt-item">${current.taco} ${getDisplayName(current.taco, "TACO")}</div>`;
-        if (current.tostada > 0) itemsHtml += `<div class="receipt-item">${current.tostada} ${getDisplayName(current.tostada, "TOSTADA")}</div>`;
+        if (current.torta > 0) itemsHtml += `<div class="receipt-item">${current.torta} ${getDisplayName(current.torta, "TORTA")}</div>`;
         document.getElementById('receipt-body').innerHTML = itemsHtml;
         const noteContainer = document.getElementById('receipt-note-container');
         noteContainer.innerHTML = noteText.trim() !== "" ? `<div class="receipt-note">NOTE: ${noteText.toUpperCase()}</div>` : "";
-        
         window.print();
-        current = { taco: 0, tostada: 0 }; document.getElementById('kitchen-note').value = ""; refreshUI();
+        current = { taco: 0, torta: 0 }; document.getElementById('kitchen-note').value = ""; refreshUI();
     }
 
     function printSummary() {
@@ -244,12 +216,7 @@
         if (pin === MANAGER_PIN) {
             const now = new Date();
             document.getElementById('receipt-time').innerText = now.toLocaleDateString() + " " + now.toLocaleTimeString();
-            document.getElementById('receipt-body').innerHTML = `
-                <div class="summary-title">DAILY SALES SUMMARY</div>
-                <div class="receipt-item">TACOS: ${totals.taco}</div>
-                <div class="receipt-item">TOSTADAS: ${totals.tostada}</div>
-                <div style="font-size: 10px; margin-top: 10px;">End of Summary</div>
-            `;
+            document.getElementById('receipt-body').innerHTML = `<div class="summary-title">DAILY SALES SUMMARY</div><div class="receipt-item">TACOS: ${totals.taco}</div><div class="receipt-item">TORTAS: ${totals.torta}</div><div style="font-size: 10px; margin-top: 10px;">End of Summary</div>`;
             document.getElementById('receipt-note-container').innerHTML = "";
             window.print();
             refreshUI();
@@ -260,7 +227,7 @@
         if (salesLog.length === 0) return alert("No orders to void.");
         const lastOrder = salesLog[salesLog.length - 1];
         if (confirm(`Void last order from ${lastOrder.time}?`)) {
-            totals.taco = Math.max(0, totals.taco - lastOrder.taco); totals.tostada = Math.max(0, totals.tostada - lastOrder.tostada);
+            totals.taco = Math.max(0, totals.taco - lastOrder.taco); totals.torta = Math.max(0, totals.torta - lastOrder.torta);
             salesLog.pop(); saveData(); refreshUI();
         }
     }
@@ -274,7 +241,7 @@
 
     function exportLog() { 
         if (salesLog.length === 0) return alert("No data"); 
-        let csv = "Time,Taco,Tostada\n" + salesLog.map(e => `${e.time},${e.taco},${e.tostada}`).join("\n"); 
+        let csv = "Time,Taco,Torta\n" + salesLog.map(e => `${e.time},${e.taco},${e.torta}`).join("\n"); 
         const blob = new Blob([csv], { type: 'text/csv' }); 
         const url = URL.createObjectURL(blob); 
         const a = document.createElement("a"); 
@@ -285,8 +252,8 @@
         const pin = prompt("Enter Manager PIN to close the day:");
         if (pin === MANAGER_PIN) {
             if (confirm("Close day? Sales will be added to History.")) {
-                archiveToHistory(lastActiveDate, totals.taco, totals.tostada);
-                totals = { taco: 0, tostada: 0 };
+                archiveToHistory(lastActiveDate, totals.taco, totals.torta);
+                totals = { taco: 0, torta: 0 };
                 salesLog = [];
                 saveData();
                 refreshUI();
