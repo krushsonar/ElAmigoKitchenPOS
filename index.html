@@ -25,6 +25,7 @@
         .note-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         .btn-print { width: 100%; padding: 20px; background: #27ae60; color: white; border: none; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-bottom: 10px; }
         .btn-void { width: 100%; padding: 12px; background: #f39c12; color: white; border: none; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        .manager-only { display: none; width: 100%; flex-direction: column; align-items: center; }
         .history-container, .log-container { background: white; width: 100%; max-width: 450px; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-top: 15px; border: 1px solid #eee; box-sizing: border-box; }
         .log-container { max-height: 150px; overflow-y: auto; }
         .history-container { max-height: 200px; overflow-y: auto; }
@@ -48,7 +49,7 @@
 
 <div id="login-overlay">
     <div class="login-box">
-        <h3>Employee Login</h3>
+        <h3>Login</h3>
         <p style="font-size: 12px;">El Amigo Carniceria POS</p>
         <input type="password" id="pass-field" class="login-input" placeholder="Enter PIN" inputmode="numeric">
         <button type="button" class="btn-login" onclick="checkPass()">ENTER</button>
@@ -86,64 +87,57 @@
         <button class="btn-void" onclick="voidLast()">VOID LAST ORDER</button>
     </div>
 
-    <div class="log-container">
-        <h4>Recent Orders</h4>
-        <table id="log-table">
-            <thead><tr><th>Time</th><th>Taco</th><th>Torta</th></tr></thead>
-            <tbody id="log-body"></tbody>
-        </table>
-    </div>
-
-    <div class="history-container">
-        <h4>Sales History (Last 30 Days)</h4>
-        <table id="history-table">
-            <thead><tr><th>Date</th><th>Taco</th><th>Torta</th></tr></thead>
-            <tbody id="history-body"></tbody>
-        </table>
-    </div>
-
-    <div class="management-section">
-        <button class="btn-export" onclick="exportLog()">EXPORT CSV</button>
-        <button class="btn-summary" onclick="printSummary()">PRINT SUMMARY</button>
-        <button class="btn-close" onclick="doReset()">CLOSE DAY</button>
+    <div id="manager-tools" class="manager-only">
+        <div class="log-container">
+            <h4>Recent Orders</h4>
+            <table id="log-table"><thead><tr><th>Time</th><th>Taco</th><th>Torta</th></tr></thead><tbody id="log-body"></tbody></table>
+        </div>
+        <div class="history-container">
+            <h4>Sales History (Last 30 Days)</h4>
+            <table id="history-table"><thead><tr><th>Date</th><th>Taco</th><th>Torta</th></tr></thead><tbody id="history-body"></tbody></table>
+        </div>
+        <div class="management-section">
+            <button class="btn-export" onclick="exportLog()">EXPORT CSV</button>
+            <button class="btn-summary" onclick="printSummary()">PRINT SUMMARY</button>
+            <button class="btn-close" onclick="doReset()">CLOSE DAY</button>
+        </div>
     </div>
 </div>
 
-<div id="receipt">
-    <div id="receipt-time" class="receipt-time"></div>
-    <div id="receipt-body"></div>
-    <div id="receipt-note-container"></div>
-</div>
+<div id="receipt"><div id="receipt-time" class="receipt-time"></div><div id="receipt-body"></div><div id="receipt-note-container"></div></div>
 
 <script>
     const SHOP_PIN = "1234";
     const MANAGER_PIN = "9999";
     const SESSION_EXPIRY = 12 * 60 * 60 * 1000;
+    let isManager = false;
 
     function checkPass() {
         const inputField = document.getElementById('pass-field');
         const inputVal = inputField.value.trim();
-        if (inputVal === SHOP_PIN) {
-            localStorage.setItem('pos_auth_time', Date.now());
-            showApp();
-        } else {
-            document.getElementById('login-error').style.display = 'block';
-            inputField.value = "";
-        }
+        if (inputVal === MANAGER_PIN) { isManager = true; saveAuth(); showApp(); }
+        else if (inputVal === SHOP_PIN) { isManager = false; saveAuth(); showApp(); }
+        else { document.getElementById('login-error').style.display = 'block'; inputField.value = ""; }
     }
+
+    function saveAuth() { localStorage.setItem('pos_auth_time', Date.now()); localStorage.setItem('pos_is_manager', isManager); }
 
     function showApp() {
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('main-app').style.display = 'flex';
+        document.getElementById('manager-tools').style.display = isManager ? 'flex' : 'none';
         checkAutoArchive();
         refreshUI();
     }
 
-    function manualLock() { localStorage.removeItem('pos_auth_time'); location.reload(); }
+    function manualLock() { localStorage.clear(); location.reload(); }
 
     window.onload = function() {
         const lastAuth = localStorage.getItem('pos_auth_time');
-        if (lastAuth && (Date.now() - lastAuth < SESSION_EXPIRY)) { showApp(); }
+        if (lastAuth && (Date.now() - lastAuth < SESSION_EXPIRY)) {
+            isManager = localStorage.getItem('pos_is_manager') === 'true';
+            showApp();
+        }
     }
 
     let totals = JSON.parse(localStorage.getItem('amigoTotals')) || { taco: 0, torta: 0 };
@@ -155,24 +149,15 @@
     function checkAutoArchive() {
         const todayStr = new Date().toDateString();
         if (lastActiveDate !== todayStr) {
-            if (totals.taco > 0 || totals.torta > 0) {
-                archiveToHistory(lastActiveDate, totals.taco, totals.torta);
-                totals = { taco: 0, torta: 0 };
-                salesLog = [];
-            }
-            lastActiveDate = todayStr;
-            saveData();
+            if (totals.taco > 0 || totals.torta > 0) { archiveToHistory(lastActiveDate, totals.taco, totals.torta); totals = { taco: 0, torta: 0 }; salesLog = []; }
+            lastActiveDate = todayStr; saveData();
         }
     }
 
     function archiveToHistory(dateStr, tCount, tortCount) {
         const existingIdx = history.findIndex(day => day.date === dateStr);
-        if (existingIdx > -1) {
-            history[existingIdx].taco += tCount;
-            history[existingIdx].torta += tortCount;
-        } else {
-            history.push({ date: dateStr, taco: tCount, torta: tortCount });
-        }
+        if (existingIdx > -1) { history[existingIdx].taco += tCount; history[existingIdx].torta += tortCount; }
+        else { history.push({ date: dateStr, taco: tCount, torta: tortCount }); }
         if (history.length > 30) history.shift();
     }
 
@@ -182,10 +167,8 @@
         document.getElementById('total-torta').innerText = totals.torta;
         document.getElementById('qty-taco').innerText = current.taco;
         document.getElementById('qty-torta').innerText = current.torta;
-        const logBody = document.getElementById('log-body');
-        logBody.innerHTML = salesLog.map(entry => `<tr><td>${entry.time}</td><td>${entry.taco}</td><td>${entry.torta}</td></tr>`).reverse().join('');
-        const histBody = document.getElementById('history-body');
-        histBody.innerHTML = history.map(day => `<tr><td class="hist-date">${day.date}</td><td>${day.taco}</td><td>${day.torta}</td></tr>`).reverse().join('');
+        document.getElementById('log-body').innerHTML = salesLog.map(e => `<tr><td>${e.time}</td><td>${e.taco}</td><td>${e.torta}</td></tr>`).reverse().join('');
+        document.getElementById('history-body').innerHTML = history.map(d => `<tr><td>${d.date}</td><td>${d.taco}</td><td>${d.torta}</td></tr>`).reverse().join('');
     }
 
     function changeQty(item, amount) { current[item] = Math.max(0, current[item] + amount); refreshUI(); }
@@ -193,73 +176,37 @@
 
     function doPrint() {
         if (current.taco === 0 && current.torta === 0) return;
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        const noteText = document.getElementById('kitchen-note').value;
+        const now = new Date(); const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         totals.taco += current.taco; totals.torta += current.torta;
         salesLog.push({ time: timeStr, taco: current.taco, torta: current.torta });
-        lastActiveDate = new Date().toDateString();
         saveData();
         document.getElementById('receipt-time').innerText = now.toLocaleDateString() + " " + timeStr;
         let itemsHtml = "";
         if (current.taco > 0) itemsHtml += `<div class="receipt-item">${current.taco} ${getDisplayName(current.taco, "TACO")}</div>`;
         if (current.torta > 0) itemsHtml += `<div class="receipt-item">${current.torta} ${getDisplayName(current.torta, "TORTA")}</div>`;
         document.getElementById('receipt-body').innerHTML = itemsHtml;
-        const noteContainer = document.getElementById('receipt-note-container');
-        noteContainer.innerHTML = noteText.trim() !== "" ? `<div class="receipt-note">NOTE: ${noteText.toUpperCase()}</div>` : "";
         window.print();
         current = { taco: 0, torta: 0 }; document.getElementById('kitchen-note').value = ""; refreshUI();
     }
 
     function printSummary() {
-        const pin = prompt("Enter Manager PIN to Print Summary:");
-        if (pin === MANAGER_PIN) {
-            const now = new Date();
-            document.getElementById('receipt-time').innerText = now.toLocaleDateString() + " " + now.toLocaleTimeString();
-            document.getElementById('receipt-body').innerHTML = `<div class="summary-title">DAILY SALES SUMMARY</div><div class="receipt-item">TACOS: ${totals.taco}</div><div class="receipt-item">TORTAS: ${totals.torta}</div><div style="font-size: 10px; margin-top: 10px;">End of Summary</div>`;
-            document.getElementById('receipt-note-container').innerHTML = "";
-            window.print();
-            refreshUI();
-        } else if (pin !== null) { alert("Incorrect PIN."); }
+        const now = new Date();
+        document.getElementById('receipt-time').innerText = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+        document.getElementById('receipt-body').innerHTML = `<div class="summary-title">DAILY SALES SUMMARY</div><div class="receipt-item">TACOS: ${totals.taco}</div><div class="receipt-item">TORTAS: ${totals.torta}</div>`;
+        window.print();
     }
 
     function voidLast() {
-        if (salesLog.length === 0) return alert("No orders to void.");
-        const lastOrder = salesLog[salesLog.length - 1];
-        if (confirm(`Void last order from ${lastOrder.time}?`)) {
-            totals.taco = Math.max(0, totals.taco - lastOrder.taco); totals.torta = Math.max(0, totals.torta - lastOrder.torta);
-            salesLog.pop(); saveData(); refreshUI();
-        }
+        if (salesLog.length === 0) return;
+        const lastOrder = salesLog.pop();
+        totals.taco = Math.max(0, totals.taco - lastOrder.taco);
+        totals.torta = Math.max(0, totals.torta - lastOrder.torta);
+        saveData(); refreshUI();
     }
 
-    function saveData() { 
-        localStorage.setItem('amigoTotals', JSON.stringify(totals)); 
-        localStorage.setItem('amigoLog', JSON.stringify(salesLog)); 
-        localStorage.setItem('amigoHistory', JSON.stringify(history)); 
-        localStorage.setItem('amigoLastActiveDate', lastActiveDate); 
-    }
-
-    function exportLog() { 
-        if (salesLog.length === 0) return alert("No data"); 
-        let csv = "Time,Taco,Torta\n" + salesLog.map(e => `${e.time},${e.taco},${e.torta}`).join("\n"); 
-        const blob = new Blob([csv], { type: 'text/csv' }); 
-        const url = URL.createObjectURL(blob); 
-        const a = document.createElement("a"); 
-        a.href = url; a.download = `Sales_${new Date().toISOString().split('T')[0]}.csv`; a.click(); 
-    }
-
-    function doReset() {
-        const pin = prompt("Enter Manager PIN to close the day:");
-        if (pin === MANAGER_PIN) {
-            if (confirm("Close day? Sales will be added to History.")) {
-                archiveToHistory(lastActiveDate, totals.taco, totals.torta);
-                totals = { taco: 0, torta: 0 };
-                salesLog = [];
-                saveData();
-                refreshUI();
-            }
-        } else if (pin !== null) { alert("Incorrect PIN."); }
-    }
+    function saveData() { localStorage.setItem('amigoTotals', JSON.stringify(totals)); localStorage.setItem('amigoLog', JSON.stringify(salesLog)); localStorage.setItem('amigoHistory', JSON.stringify(history)); localStorage.setItem('amigoLastActiveDate', lastActiveDate); }
+    function exportLog() { let csv = "Time,Taco,Torta\n" + salesLog.map(e => `${e.time},${e.taco},${e.torta}`).join("\n"); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'})); a.download = "Sales.csv"; a.click(); }
+    function doReset() { if (confirm("Close day?")) { archiveToHistory(lastActiveDate, totals.taco, totals.torta); totals = { taco: 0, torta: 0 }; salesLog = []; saveData(); refreshUI(); } }
 </script>
 </body>
 </html>
